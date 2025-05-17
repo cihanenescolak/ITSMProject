@@ -1,0 +1,230 @@
+﻿@page "/ticket-settings"
+@using ITSMProject.Components.Pages.TicketSettings.Dialogs
+@using ITSMProject.Data
+@using Microsoft.EntityFrameworkCore
+@inject ApplicationDbContext DbContext
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>Ticket Settings</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">Ticket Settings</MudText>
+
+    <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+        <MudTabPanel Text="Categories">
+            <MudCard>
+                <MudCardHeader>
+                    <MudText Typo="Typo.h5">Categories</MudText>
+                    <MudSpacer/>
+                    <MudButton Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Add"
+                              OnClick="@(() => OpenAddCategoryDialog())">Add Category</MudButton>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudTable Items="@Categories" Dense="true" Hover="true" Bordered="true" Striped="true">
+                        <HeaderContent>
+                            <MudTh>Name</MudTh>
+                            <MudTh>Description</MudTh>
+                            <MudTh>Sub-Categories</MudTh>
+                            <MudTh>Actions</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Name">@context.Name</MudTd>
+                            <MudTd DataLabel="Description">@context.Description</MudTd>
+                            <MudTd DataLabel="Sub-Categories">
+                                <MudChipSet T="string">
+                                    @foreach (var sub in context.SubCategories)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Primary">@sub.Name</MudChip>
+                                    }
+                                </MudChipSet>
+                            </MudTd>
+                            <MudTd>
+                                <MudButtonGroup Size="Size.Small" Variant="Variant.Outlined">
+                                    <MudButton Color="Color.Info" OnClick="@(() => OpenAddSubCategoryDialog(context))">Add Sub-Category</MudButton>
+                                    <MudButton Color="Color.Error" OnClick="@(() => DeleteCategory(context))">Delete</MudButton>
+                                </MudButtonGroup>
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudCardContent>
+            </MudCard>
+        </MudTabPanel>
+
+        <MudTabPanel Text="Statuses">
+            <MudCard>
+                <MudCardHeader>
+                    <MudText Typo="Typo.h5">Statuses</MudText>
+                    <MudSpacer/>
+                    <MudButton Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Add"
+                              OnClick="@(() => OpenAddStatusDialog())">Add Status</MudButton>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudTable Items="@Statuses" Dense="true" Hover="true" Bordered="true" Striped="true">
+                        <HeaderContent>
+                            <MudTh>Name</MudTh>
+                            <MudTh>Description</MudTh>
+                            <MudTh>Actions</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Name">@context.Name</MudTd>
+                            <MudTd DataLabel="Description">@context.Description</MudTd>
+                            <MudTd>
+                                <MudButton Color="Color.Error" Size="Size.Small" Variant="Variant.Outlined"
+                                          OnClick="@(() => DeleteStatus(context))">Delete</MudButton>
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudCardContent>
+            </MudCard>
+        </MudTabPanel>
+
+        <MudTabPanel Text="Priorities">
+            <MudCard>
+                <MudCardHeader>
+                    <MudText Typo="Typo.h5">Priorities</MudText>
+                    <MudSpacer/>
+                    <MudButton Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Add"
+                              OnClick="@(() => OpenAddPriorityDialog())">Add Priority</MudButton>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudTable Items="@Priorities" Dense="true" Hover="true" Bordered="true" Striped="true">
+                        <HeaderContent>
+                            <MudTh>Name</MudTh>
+                            <MudTh>Description</MudTh>
+                            <MudTh>Actions</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Name">@context.Name</MudTd>
+                            <MudTd DataLabel="Description">@context.Description</MudTd>
+                            <MudTd>
+                                <MudButton Color="Color.Error" Size="Size.Small" Variant="Variant.Outlined"
+                                          OnClick="@(() => DeletePriority(context))">Delete</MudButton>
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudCardContent>
+            </MudCard>
+        </MudTabPanel>
+    </MudTabs>
+</MudContainer>
+
+@code {
+    private List<TicketCategory> Categories { get; set; } = new();
+    private List<TicketStatus> Statuses { get; set; } = new();
+    private List<TicketPriority> Priorities { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        // Use discriminator to filter out sub-categories
+        Categories = await DbContext.TicketCategories
+            .Where(c => c.GetType() == typeof(TicketCategory))
+            .Include(c => c.SubCategories)
+            .ToListAsync();
+            
+        Statuses = await DbContext.TicketStatuses.ToListAsync();
+        Priorities = await DbContext.TicketPriorities.ToListAsync();
+    }
+
+    private async Task OpenAddCategoryDialog()
+    {
+        var dialog = await DialogService.ShowAsync<AddCategoryDialog>("Add Category");
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadData();
+        }
+    }
+
+    private async Task OpenAddSubCategoryDialog(TicketCategory parent)
+    {
+        var parameters = new DialogParameters
+        {
+            { "ParentCategory", parent }
+        };
+        
+        var dialog = await DialogService.ShowAsync<AddSubCategoryDialog>("Add Sub-Category", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadData();
+        }
+    }
+
+    private async Task OpenAddStatusDialog()
+    {
+        var dialog = await DialogService.ShowAsync<AddStatusDialog>("Add Status");
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadData();
+        }
+    }
+
+    private async Task OpenAddPriorityDialog()
+    {
+        var dialog = await DialogService.ShowAsync<AddPriorityDialog>("Add Priority");
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadData();
+        }
+    }
+
+    private async Task DeleteCategory(TicketCategory category)
+    {
+        var result = await DialogService.ShowMessageBox(
+            "Delete Category",
+            $"Are you sure you want to delete the category '{category.Name}'?",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            DbContext.TicketCategories.Remove(category);
+            await DbContext.SaveChangesAsync();
+            Snackbar.Add($"Category '{category.Name}' deleted.", Severity.Success);
+            await LoadData();
+        }
+    }
+
+    private async Task DeleteStatus(TicketStatus status)
+    {
+        var result = await DialogService.ShowMessageBox(
+            "Delete Status",
+            $"Are you sure you want to delete the status '{status.Name}'?",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            DbContext.TicketStatuses.Remove(status);
+            await DbContext.SaveChangesAsync();
+            Snackbar.Add($"Status '{status.Name}' deleted.", Severity.Success);
+            await LoadData();
+        }
+    }
+
+    private async Task DeletePriority(TicketPriority priority)
+    {
+        var result = await DialogService.ShowMessageBox(
+            "Delete Priority",
+            $"Are you sure you want to delete the priority '{priority.Name}'?",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            DbContext.TicketPriorities.Remove(priority);
+            await DbContext.SaveChangesAsync();
+            Snackbar.Add($"Priority '{priority.Name}' deleted.", Severity.Success);
+            await LoadData();
+        }
+    }
+}

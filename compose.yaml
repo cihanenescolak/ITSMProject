@@ -1,0 +1,9 @@
+﻿services:
+  itsmprojecttsmproject:
+    image: itsmprojecttsmproject
+    build:
+      context: .
+      dockerfile: ITSMProject/Dockerfile
+    ports:
+      - "8080:8080"
+

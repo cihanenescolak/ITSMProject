@@ -1,0 +1,22 @@
+# This is a generated file. Not intended for manual editing.
+services:
+  itsmprojecttsmproject:
+    build:
+      context: "C:\\Users\\cihan\\RiderProjects\\ITSMProject"
+      dockerfile: "ITSMProject/Dockerfile"
+      target: "base"
+    command: []
+    entrypoint:
+    - "dotnet"
+    - "/app/bin/Debug/net9.0/ITSMProject.dll"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ASPNETCORE_STATICWEBASSETS: "/app/bin/Debug/net9.0/ITSMProject.staticwebassets.runtime.CT.json"
+      DOTNET_USE_POLLING_FILE_WATCHER: "true"
+    image: "itsmprojecttsmproject:dev"
+    ports: []
+    volumes:
+    - "C:\\Users\\cihan\\RiderProjects\\ITSMProject\\ITSMProject:/app:rw"
+    - "C:\\Users\\cihan\\RiderProjects\\ITSMProject:/src:rw"
+    - "C:\\Users\\cihan\\.nuget\\packages:/home/app/.nuget/packages"
+    working_dir: "/app"

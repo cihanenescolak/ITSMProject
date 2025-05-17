@@ -1,0 +1,37 @@
+@using ITSMProject.Data
+@inject ApplicationDbContext DbContext
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudTextField @bind-Value="priority.Name" Label="Name" Required="true"/>
+        <MudTextField @bind-Value="priority.Description" Label="Description" Lines="3"/>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">Add</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+
+    private TicketPriority priority = new();
+
+    private async Task Submit()
+    {
+        if (string.IsNullOrWhiteSpace(priority.Name))
+        {
+            Snackbar.Add("Name is required", Severity.Error);
+            return;
+        }
+
+        DbContext.TicketPriorities.Add(priority);
+        await DbContext.SaveChangesAsync();
+        
+        Snackbar.Add("Priority added successfully", Severity.Success);
+        MudDialog.Close(DialogResult.Ok(priority));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

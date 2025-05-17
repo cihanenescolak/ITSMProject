@@ -1,0 +1,157 @@
+@page "/tickets/my"
+@using ITSMProject.Components.Pages.Tickets.Dialogs
+@using ITSMProject.Data
+@using Microsoft.EntityFrameworkCore
+@inject ApplicationDbContext DbContext
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+@attribute [Authorize]
+
+<PageTitle>My Tickets</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudPaper Class="pa-4">
+        <MudToolBar>
+            <MudText Typo="Typo.h5">My Tickets</MudText>
+            <MudSpacer />
+            <MudButton Color="Color.Primary" 
+                      StartIcon="@Icons.Material.Filled.Add"
+                      OnClick="CreateTicket">
+                Create Ticket
+            </MudButton>
+        </MudToolBar>
+
+        <MudTable Items="@_tickets" Dense="true" Hover="true" Bordered="true" 
+                 Loading="@_loading" @bind-SelectedItem="_selectedTicket"
+                 Filter="FilterFunc">
+            <ToolBarContent>
+                <MudTextField @bind-Value="_searchString" 
+                            Placeholder="Search" 
+                            Adornment="Adornment.Start"
+                            AdornmentIcon="@Icons.Material.Filled.Search"/>
+            </ToolBarContent>
+            <HeaderContent>
+                <MudTh>ID</MudTh>
+                <MudTh>Title</MudTh>
+                <MudTh>Status</MudTh>
+                <MudTh>Priority</MudTh>
+                <MudTh>Category</MudTh>
+                <MudTh>Created</MudTh>
+                <MudTh>Assigned To</MudTh>
+                <MudTh>Actions</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="ID">#@context.Id</MudTd>
+                <MudTd DataLabel="Title">@context.Title</MudTd>
+                <MudTd DataLabel="Status">
+                    <MudChip Color="@GetStatusColor(context.Status.Name)" Size="Size.Small" T="string">
+                        @context.Status.Name
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Priority">
+                    <MudChip Color="@GetPriorityColor(context.Priority.Name)" Size="Size.Small" T="string">
+                        @context.Priority.Name
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Category">@context.Category.Name</MudTd>
+                <MudTd DataLabel="Created">@context.CreatedAt.ToLocalTime().ToString("g")</MudTd>
+                <MudTd DataLabel="Assigned To">@(context.AssignedTo?.UserName ?? "Unassigned")</MudTd>
+                <MudTd>
+                    <MudIconButton Icon="@Icons.Material.Filled.Visibility" 
+                                 OnClick="@(() => ViewTicket(context))" 
+                                 Size="Size.Small"/>
+                </MudTd>
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager />
+            </PagerContent>
+        </MudTable>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private bool _loading = true;
+    private string _searchString = "";
+    private List<Ticket> _tickets = new();
+    private Ticket? _selectedTicket;
+    private ApplicationUser _currentUser = null!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await SetCurrentUser();
+        await LoadTickets();
+        _loading = false;
+    }
+
+    private async Task SetCurrentUser()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var userEmail = authState.User.Identity?.Name;
+        if (userEmail != null)
+        {
+            _currentUser = await DbContext.Users.FirstAsync(u => u.Email == userEmail);
+        }
+    }
+
+    private async Task LoadTickets()
+    {
+        _tickets = await DbContext.Tickets
+            .Include(t => t.Category)
+            .Include(t => t.Status)
+            .Include(t => t.Priority)
+            .Include(t => t.AssignedTo)
+            .Where(t => t.CreatedById == _currentUser.Id)
+            .OrderByDescending(t => t.CreatedAt)
+            .ToListAsync();
+    }
+
+    private async Task CreateTicket()
+    {
+        var dialog = await DialogService.ShowAsync<CreateTicketDialog>("Create Ticket");
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadTickets();
+            Snackbar.Add("Ticket created successfully", Severity.Success);
+        }
+    }
+
+    private void ViewTicket(Ticket ticket)
+    {
+        NavigationManager.NavigateTo($"/tickets/{ticket.Id}");
+    }
+
+    private bool FilterFunc(Ticket ticket)
+    {
+        if (string.IsNullOrWhiteSpace(_searchString)) return true;
+
+        return ticket.Title.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+               ticket.Category.Name.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+               ticket.Status.Name.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+               ticket.Priority.Name.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+               (ticket.AssignedTo?.UserName?.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ?? false);
+    }
+
+    private Color GetStatusColor(string status) => status.ToLower() switch
+    {
+        "open" => Color.Warning,
+        "in progress" => Color.Info,
+        "resolved" => Color.Success,
+        "closed" => Color.Default,
+        _ => Color.Default
+    };
+
+    private Color GetPriorityColor(string priority) => priority.ToLower() switch
+    {
+        "critical" => Color.Error,
+        "high" => Color.Warning,
+        "medium" => Color.Info,
+        "low" => Color.Success,
+        _ => Color.Default
+    };
+
+}

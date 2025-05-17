@@ -1,0 +1,86 @@
+@using System.ComponentModel.DataAnnotations
+@using ITSMProject.Data
+@inject ISnackbar Snackbar
+@inject ApplicationDbContext DbContext
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Add New Team</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form" Model="@_model">
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudTextField T="string" 
+                                @bind-Value="_model.Name" 
+                                Label="Team Name" 
+                                Required="true"
+                                RequiredError="Team name is required!"/>
+                </MudItem>
+                
+                <MudItem xs="12">
+                    <MudTextField T="string" 
+                                @bind-Value="_model.Description" 
+                                Label="Description" 
+                                Lines="3"/>
+                </MudItem>
+                
+                <MudItem xs="12">
+                    <MudSelect T="ApplicationUser" Label="Team Lead" 
+                              @bind-Value="_model.TeamLead"
+                              ToStringFunc="@(u => u?.UserName ?? string.Empty)">
+                        @foreach (var user in AvailableUsers)
+                        {
+                            <MudSelectItem Value="@user">@user.UserName</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">Add Team</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public List<ApplicationUser> AvailableUsers { get; set; } = null!;
+
+    private MudForm _form = null!;
+    private readonly TeamModel _model = new();
+
+    private async Task Submit()
+    {
+        await _form.Validate();
+        if (_form.IsValid)
+        {
+            var team = new Team
+            {
+                Name = _model.Name,
+                Description = _model.Description,
+                TeamLead = _model.TeamLead,
+                TeamLeadId = _model.TeamLead?.Id
+            };
+            
+            DbContext.Teams.Add(team);
+            
+            await DbContext.SaveChangesAsync();
+            
+            Snackbar.Add($"Team '{team.Name}' created successfully!", Severity.Success);
+
+            MudDialog.Close(DialogResult.Ok(team));
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private class TeamModel
+    {
+        [Required(ErrorMessage = "Team name is required")]
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public ApplicationUser? TeamLead { get; set; }
+    }
+}

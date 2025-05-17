@@ -1,0 +1,359 @@
+﻿@page "/usermanagement"
+@using Microsoft.AspNetCore.Identity
+@using ITSMProject.Data
+@using System.ComponentModel.DataAnnotations
+@using ITSMProject.Components.Pages.Users.Dialogs
+@using Microsoft.EntityFrameworkCore
+
+@inject UserManager<ApplicationUser> UserManager
+@inject NavigationManager NavigationManager
+@inject RoleManager<ApplicationRole> RoleManager
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject ApplicationDbContext DbContext
+
+@* @attribute [Authorize(Roles = "Admin")] *@
+
+<PageTitle>User Management</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+    <MudText Typo="Typo.h4" Class="mb-4">User Management</MudText>
+
+    <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+        <MudTabPanel Text="Users">
+            <MudCard>
+                <MudCardHeader>
+                    <MudText Typo="Typo.h5">Users</MudText>
+                    <MudSpacer/>
+                    <MudButton Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Add"
+                               OnClick="@(() => OpenAddUserDialog())">Add User
+                    </MudButton>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudTable Items="@Users" Dense="true" Hover="true" Bordered="true" Striped="true"
+                              Loading="@_loading"
+                              LoadingProgressColor="Color.Primary">
+                        <HeaderContent>
+                            <MudTh>Username</MudTh>
+                            <MudTh>Email</MudTh>
+                            <MudTh>Roles</MudTh>
+                            <MudTh>Actions</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Username">@context.UserName</MudTd>
+                            <MudTd DataLabel="Email">@context.Email</MudTd>
+                            <MudTd DataLabel="Roles">
+                                @if (_userRoles.ContainsKey(context.Id.ToString()))
+                                {
+                                    <MudChipSet T="string">
+                                        @foreach (var role in _userRoles[context.Id.ToString()])
+                                        {
+                                            <MudChip T="string" Color="Color.Primary" Size="Size.Small">@role</MudChip>
+                                        }
+                                    </MudChipSet>
+                                }
+                            </MudTd>
+                            <MudTd>
+                                <MudButtonGroup Size="Size.Small" Variant="Variant.Outlined">
+                                    <MudButton Color="Color.Info" OnClick="@(() => OpenManageUserRolesDialog(context))">
+                                        Manage Roles
+                                    </MudButton>
+                                    <MudButton Color="Color.Info" OnClick="@(() => ViewUserDetails(context))">View
+                                        Details
+                                    </MudButton>
+                                    <MudButton Color="Color.Error" OnClick="@(() => DeleteUser(context))">Delete
+                                    </MudButton>
+                                </MudButtonGroup>
+                            </MudTd>
+                        </RowTemplate>
+                        <PagerContent>
+                            <MudTablePager/>
+                        </PagerContent>
+                    </MudTable>
+                </MudCardContent>
+            </MudCard>
+        </MudTabPanel>
+
+        <MudTabPanel Text="Roles">
+            <MudCard>
+                <MudCardHeader>
+                    <MudText Typo="Typo.h5">Roles</MudText>
+                    <MudSpacer/>
+                    <MudButton Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Add"
+                               OnClick="@(() => OpenAddRoleDialog())">Add Role
+                    </MudButton>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudTable Items="@Roles" Dense="true" Hover="true" Bordered="true" Striped="true"
+                              Loading="@_loading"
+                              LoadingProgressColor="Color.Primary">
+                        <HeaderContent>
+                            <MudTh>Role Name</MudTh>
+                            <MudTh>Actions</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Role Name">@context.Name</MudTd>
+                            <MudTd>
+                                <MudButton Color="Color.Error" Variant="Variant.Outlined" Size="Size.Small"
+                                           OnClick="@(() => DeleteRole(context))">Delete
+                                </MudButton>
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudCardContent>
+            </MudCard>
+        </MudTabPanel>
+
+        <MudTabPanel Text="Teams">
+            <MudCard>
+                <MudCardHeader>
+                    <MudText Typo="Typo.h5">Teams</MudText>
+                    <MudSpacer/>
+                    <MudButton Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Add"
+                              OnClick="@(() => OpenAddTeamDialog())">Add Team</MudButton>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudTable Items="@Teams" Dense="true" Hover="true" Bordered="true" Striped="true"
+                             Loading="@_loading" LoadingProgressColor="Color.Primary">
+                        <HeaderContent>
+                            <MudTh>Team Name</MudTh>
+                            <MudTh>Team Lead</MudTh>
+                            <MudTh>Members</MudTh>
+                            <MudTh>Actions</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Team Name">@context.Name</MudTd>
+                            <MudTd DataLabel="Team Lead">@(context.TeamLead?.UserName ?? "Not assigned")</MudTd>
+                            <MudTd DataLabel="Members">
+                                <MudChipSet T="string">
+                                    @foreach (var member in context.Members.Take(3))
+                                    {
+                                        <MudChip T="string" Color="Color.Primary" Size="Size.Small">@member.UserName</MudChip>
+                                    }
+                                    @if (context.Members.Count > 3)
+                                    {
+                                        <MudChip T="string" Color="Color.Secondary" Size="Size.Small">+@(context.Members.Count - 3) more</MudChip>
+                                    }
+                                </MudChipSet>
+                            </MudTd>
+                            <MudTd>
+                                <MudButtonGroup Size="Size.Small" Variant="Variant.Outlined">
+                                    <MudButton Color="Color.Info" OnClick="@(() => ManageTeamMembers(context))">Manage Members</MudButton>
+                                    <MudButton Color="Color.Error" OnClick="@(() => DeleteTeam(context))">Delete</MudButton>
+                                </MudButtonGroup>
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudCardContent>
+            </MudCard>
+        </MudTabPanel>
+    </MudTabs>
+</MudContainer>
+
+@code {
+    private bool _loading = true;
+    private List<ApplicationUser> Users { get; set; } = new();
+    private List<ApplicationRole> Roles { get; set; } = new();
+    private Dictionary<string, List<string>> _userRoles = new();
+    private List<Team> Teams { get; set; } = new();
+
+    // Dialog options
+    private DialogOptions dialogOptions = new() { MaxWidth = MaxWidth.Small, FullWidth = true };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+        await LoadRoles();
+        await LoadTeams();
+        _loading = false;
+    }
+
+    private async Task LoadUsers()
+    {
+        Users = UserManager.Users.ToList();
+        _userRoles = new Dictionary<string, List<string>>();
+
+        foreach (var user in Users)
+        {
+            var roles = await UserManager.GetRolesAsync(user);
+            _userRoles[user.Id.ToString()] = roles.ToList();
+        }
+    }
+
+    private async Task LoadRoles()
+    {
+        Roles = RoleManager.Roles.ToList();
+    }
+
+    private async Task LoadTeams()
+    {
+        Teams = await DbContext.Teams
+            .Include(t => t.Members)
+            .Include(t => t.TeamLead)
+            .ToListAsync();
+    }
+
+    private async Task OpenAddUserDialog()
+    {
+        var dialog = await DialogService.ShowAsync<AddUserDialog>("Add User");
+        var result = await dialog.Result;
+        
+        if (!result.Canceled)
+        {
+            await LoadUsers();
+        }
+    }
+
+    private async Task OpenAddRoleDialog()
+    {
+        var dialog = await DialogService.ShowAsync<AddRoleDialog>("Add Role");
+        var result = await dialog.Result;
+        
+        if (!result.Canceled)
+        {
+            await LoadRoles();
+        }
+    }
+
+    private async Task OpenAddTeamDialog()
+    {
+        var parameters = new DialogParameters
+        {
+            { nameof(AddTeamDialog.AvailableUsers), Users }
+        };
+
+        var dialog = await DialogService.ShowAsync<AddTeamDialog>("Add Team", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var team = result.Data as Team;
+            // TODO: Save team to your data source
+            await LoadTeams();
+        }
+    }
+
+    private async Task OpenManageUserRolesDialog(ApplicationUser user)
+    {
+        var parameters = new DialogParameters
+        {
+            { nameof(ManageUserRolesDialog.User), user },
+            { nameof(ManageUserRolesDialog.Roles), Roles }
+        };
+
+        var dialog = await DialogService.ShowAsync<ManageUserRolesDialog>("Manage Roles", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadUsers();
+        }
+    }
+
+    private async Task ManageTeamMembers(Team team)
+    {
+        var parameters = new DialogParameters
+        {
+            { "Team", team },
+            { "AvailableUsers", Users }
+        };
+
+        var dialog = await DialogService.ShowAsync<ManageTeamMembersDialog>("Manage Team Members", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadTeams();
+        }
+    }
+
+    private async Task ViewUserDetails(ApplicationUser user)
+    {
+        var parameters = new DialogParameters
+        {
+            { nameof(ViewUserDetailsDialog.User), user },
+            { nameof(ViewUserDetailsDialog.UserRoles), _userRoles[user.Id.ToString()] },
+            { nameof(ViewUserDetailsDialog.AvailableRoles), Roles }
+        };
+
+        var dialog = await DialogService.ShowAsync<ViewUserDetailsDialog>("User Details", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadUsers();
+        }
+    }
+
+    private async Task SaveUserRoles()
+    {
+        // Removed as it's now handled by ManageUserRolesDialog
+    }
+
+    private async Task DeleteUser(ApplicationUser user)
+    {
+        bool? result = await DialogService.ShowMessageBox(
+            "Delete User",
+            $"Are you sure you want to delete the user '{user.UserName}'?",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            var deleteResult = await UserManager.DeleteAsync(user);
+            if (deleteResult.Succeeded)
+            {
+                Snackbar.Add("User deleted successfully", Severity.Success);
+                await LoadUsers();
+            }
+            else
+            {
+                foreach (var error in deleteResult.Errors)
+                {
+                    Snackbar.Add(error.Description, Severity.Error);
+                }
+            }
+        }
+    }
+
+    private async Task DeleteRole(ApplicationRole role)
+    {
+        bool? result = await DialogService.ShowMessageBox(
+            "Delete Role",
+            $"Are you sure you want to delete the role '{role.Name}'?",
+            yesText: "Delete", cancelText: "Cancel");
+
+        if (result == true)
+        {
+            var deleteResult = await RoleManager.DeleteAsync(role);
+            if (deleteResult.Succeeded)
+            {
+                Snackbar.Add("Role deleted successfully", Severity.Success);
+                await LoadRoles();
+            }
+            else
+            {
+                foreach (var error in deleteResult.Errors)
+                {
+                    Snackbar.Add(error.Description, Severity.Error);
+                }
+            }
+        }
+    }
+
+    private async Task DeleteTeam(Team team)
+    {
+        var result = await DialogService.ShowMessageBox(
+            "Delete Team",
+            $"Are you sure you want to delete the team '{team.Name}'?",
+            yesText: "Delete",
+            cancelText: "Cancel");
+
+        if (result == true)
+        {
+            DbContext.Teams.Remove(team);
+            await DbContext.SaveChangesAsync();
+            Snackbar.Add($"Team '{team.Name}' deleted.", Severity.Success);
+            await LoadTeams();
+        }
+    }
+}

@@ -1,0 +1,39 @@
+@using ITSMProject.Data
+@inject ApplicationDbContext DbContext
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudTextField @bind-Value="subCategory.Name" Label="Name" Required="true"/>
+        <MudTextField @bind-Value="subCategory.Description" Label="Description" Lines="3"/>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">Add</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public TicketCategory ParentCategory { get; set; } = null!;
+
+    private TicketSubCategory subCategory = new();
+
+    private async Task Submit()
+    {
+        if (string.IsNullOrWhiteSpace(subCategory.Name))
+        {
+            Snackbar.Add("Name is required", Severity.Error);
+            return;
+        }
+
+        subCategory.ParentCategoryId = ParentCategory.Id;
+        DbContext.TicketSubCategories.Add(subCategory);
+        await DbContext.SaveChangesAsync();
+        
+        Snackbar.Add("Sub-category added successfully", Severity.Success);
+        MudDialog.Close(DialogResult.Ok(subCategory));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

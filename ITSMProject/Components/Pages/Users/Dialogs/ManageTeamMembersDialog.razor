@@ -1,0 +1,87 @@
+@using ITSMProject.Data
+@using Microsoft.EntityFrameworkCore
+@inject ISnackbar Snackbar
+@inject ApplicationDbContext DbContext
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Manage Team Members - @Team.Name</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudGrid>
+            <MudItem xs="12">
+                <MudSelect T="ApplicationUser" Label="Team Lead"
+                           @bind-Value="selectedTeamLead"
+                           ToStringFunc="@(u => u?.UserName ?? string.Empty)">
+                    <MudSelectItem Value="@((ApplicationUser)null)">No Team Lead</MudSelectItem>
+                    @foreach (var user in AvailableUsers)
+                    {
+                        <MudSelectItem Value="@user">@user.UserName</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudText Typo="Typo.subtitle1" Class="mb-2">Team Members</MudText>
+                <MudList Dense="true" DisableGutters="true" T="bool">
+                    @foreach (var user in AvailableUsers)
+                    {
+                        <MudListItem>
+                            <MudCheckBox T="bool"
+                                         @bind-Value="@_selectedMembers[user.Id]"
+                                         Label="@user.UserName"
+                                         Color="Color.Primary"/>
+                        </MudListItem>
+                    }
+                </MudList>
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">Save Changes</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public Team Team { get; set; } = null!;
+    [Parameter] public List<ApplicationUser> AvailableUsers { get; set; } = null!;
+
+    private ApplicationUser? selectedTeamLead;
+    private Dictionary<int, bool> _selectedMembers = new();
+
+    protected override void OnInitialized()
+    {
+        selectedTeamLead = Team.TeamLead;
+
+        foreach (var user in AvailableUsers)
+        {
+            _selectedMembers[user.Id] = Team.Members.Any(m => m.Id == user.Id);
+        }
+    }
+
+    private async Task Submit()
+    {
+        // Assign team lead
+        Team.TeamLeadId = selectedTeamLead?.Id;
+        Team.TeamLead = selectedTeamLead;
+
+        // Sync membership: set/unset TeamId on each user
+        foreach (var user in AvailableUsers)
+        {
+            bool isSelected = _selectedMembers[user.Id];
+            if (isSelected && user.TeamId != Team.Id)
+                user.TeamId = Team.Id;
+            else if (!isSelected && user.TeamId == Team.Id)
+                user.TeamId = null;
+            DbContext.Users.Update(user);
+        }
+
+        await DbContext.SaveChangesAsync();
+        Snackbar.Add("Team updated successfully", Severity.Success);
+        MudDialog.Close(DialogResult.Ok(Team));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

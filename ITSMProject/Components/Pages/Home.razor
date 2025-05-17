@@ -1,0 +1,290 @@
+@page "/"
+@using ITSMProject.Data
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@inject UserManager<ApplicationUser> UserManager
+@inject ApplicationDbContext DbContext
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Dashboard</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge">
+    @if (_isAdmin)
+    {
+        <MudGrid>
+            <MudItem xs="12">
+                <MudText Typo="Typo.h4" Class="mb-4">Admin Dashboard</MudText>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Elevation="2" Class="pa-4" Style="height: 100%">
+                    <MudStack>
+                        <MudText Typo="Typo.h6">Total Tickets</MudText>
+                        <MudText Typo="Typo.h4">@_stats.TotalTickets</MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Elevation="2" Class="pa-4" Style="height: 100%">
+                    <MudStack>
+                        <MudText Typo="Typo.h6">Open Tickets</MudText>
+                        <MudText Typo="Typo.h4" Color="Color.Warning">@_stats.OpenTickets</MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Elevation="2" Class="pa-4" Style="height: 100%">
+                    <MudStack>
+                        <MudText Typo="Typo.h6">High Priority</MudText>
+                        <MudText Typo="Typo.h4" Color="Color.Error">@_stats.HighPriorityTickets</MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="3">
+                <MudPaper Elevation="2" Class="pa-4" Style="height: 100%">
+                    <MudStack>
+                        <MudText Typo="Typo.h6">Resolved Today</MudText>
+                        <MudText Typo="Typo.h4" Color="Color.Success">@_stats.ResolvedToday</MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" sm="12" md="8">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">Recent Tickets</MudText>
+                    <MudTable Items="@_recentTickets" Dense="true" Hover="true" Striped="true">
+                        <HeaderContent>
+                            <MudTh>ID</MudTh>
+                            <MudTh>Title</MudTh>
+                            <MudTh>Status</MudTh>
+                            <MudTh>Priority</MudTh>
+                            <MudTh>Created</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>#@context.Id</MudTd>
+                            <MudTd>@context.Title</MudTd>
+                            <MudTd>
+                                <MudChip Size="Size.Small" Color="@GetStatusColor(context.Status.Name)" T="string">
+                                    @context.Status.Name
+                                </MudChip>
+                            </MudTd>
+                            <MudTd>
+                                <MudChip Size="Size.Small" Color="@GetPriorityColor(context.Priority.Name)" T="string">
+                                    @context.Priority.Name
+                                </MudChip>
+                            </MudTd>
+                            <MudTd>@context.CreatedAt.ToShortDateString()</MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" sm="12" md="4">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">Tickets by Category</MudText>
+                    <MudChart ChartType="ChartType.Pie" Width="100%" Height="300px"
+                             InputData="@_categoryData"
+                             InputLabels="@_categoryLabels"/>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    }
+    else
+    {
+        <MudGrid>
+            <MudItem xs="12">
+                <MudText Typo="Typo.h4" Class="mb-4">My Dashboard</MudText>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="4">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <MudStack>
+                        <MudText Typo="Typo.h6">My Open Tickets</MudText>
+                        <MudText Typo="Typo.h4">@_myStats.OpenTickets</MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="4">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <MudStack>
+                        <MudText Typo="Typo.h6">Assigned to Me</MudText>
+                        <MudText Typo="Typo.h4">@_myStats.AssignedTickets</MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" sm="6" md="4">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <MudStack>
+                        <MudText Typo="Typo.h6">Recently Resolved</MudText>
+                        <MudText Typo="Typo.h4" Color="Color.Success">@_myStats.RecentlyResolved</MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudPaper Elevation="2" Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">My Recent Tickets</MudText>
+                    <MudTable Items="@_myRecentTickets" Dense="true" Hover="true" Striped="true">
+                        <HeaderContent>
+                            <MudTh>ID</MudTh>
+                            <MudTh>Title</MudTh>
+                            <MudTh>Status</MudTh>
+                            <MudTh>Priority</MudTh>
+                            <MudTh>Created</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>#@context.Id</MudTd>
+                            <MudTd>@context.Title</MudTd>
+                            <MudTd>
+                                <MudChip Size="Size.Small" Color="@GetStatusColor(context.Status.Name)" T="string">
+                                    @context.Status.Name
+                                </MudChip>
+                            </MudTd>
+                            <MudTd>
+                                <MudChip Size="Size.Small" Color="@GetPriorityColor(context.Priority.Name)" T="string">
+                                    @context.Priority.Name
+                                </MudChip>
+                            </MudTd>
+                            <MudTd>@context.CreatedAt.ToShortDateString()</MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    }
+</MudContainer>
+
+@code {
+    private bool _isAdmin;
+    private string _userId = string.Empty;
+    private List<Ticket> _recentTickets = new();
+    private List<Ticket> _myRecentTickets = new();
+    private double[] _categoryData = Array.Empty<double>();
+    private string[] _categoryLabels = Array.Empty<string>();
+
+    private DashboardStats _stats = new();
+    private UserDashboardStats _myStats = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            _isAdmin = user.IsInRole("Admin");
+            var appUser = await UserManager.GetUserAsync(user);
+            if (appUser != null)
+            {
+                _userId = appUser.Id.ToString();
+                await LoadDashboardData();
+            }
+        }
+    }
+
+    private async Task LoadDashboardData()
+    {
+        if (_isAdmin)
+        {
+            // Load admin dashboard data
+            _stats = new DashboardStats
+            {
+                TotalTickets = await DbContext.Tickets.CountAsync(),
+                OpenTickets = await DbContext.Tickets
+                    .CountAsync(t => (t.CreatedById.ToString() == _userId || _isAdmin )
+                        && t.Status.Name.ToLower() != "resolved"),
+                HighPriorityTickets = await DbContext.Tickets
+                    .CountAsync(t => t.Priority.Name.ToLower() == "high"),
+                ResolvedToday = await DbContext.Tickets
+                    .CountAsync(t => t.Status.Name.ToLower() == "resolved" 
+                                   && t.UpdatedAt.HasValue 
+                                   && t.UpdatedAt.Value.Date == DateTime.Today)
+            };
+
+            _recentTickets = await DbContext.Tickets
+                .Include(t => t.Status)
+                .Include(t => t.Priority)
+                .OrderByDescending(t => t.CreatedAt)
+                .Take(10)
+                .ToListAsync();
+
+            // Calculate category distribution
+            var categories = await DbContext.TicketCategories
+                .Include(c => c.Tickets)
+                .ToListAsync();
+
+            var categoryStats = categories
+                .Select(c => new { c.Name, Count = c.Tickets.Count })
+                .Where(c => c.Count > 0)
+                .OrderByDescending(c => c.Count)
+                .ToList();
+
+            _categoryData = categoryStats.Select(c => (double)c.Count).ToArray();
+            _categoryLabels = categoryStats.Select(c => c.Name).ToArray();
+        }
+        else
+        {
+            // Load user dashboard data
+            _myStats = new UserDashboardStats
+            {
+                OpenTickets = await DbContext.Tickets
+                    .CountAsync(t => (t.CreatedById.ToString() == _userId  || _isAdmin)
+                                   && t.Status.Name.ToLower() != "resolved"),
+                AssignedTickets = await DbContext.Tickets
+                    .CountAsync(t => t.AssignedToId.ToString() == _userId 
+                                   && t.Status.Name.ToLower() != "resolved"),
+                RecentlyResolved = await DbContext.Tickets
+                    .CountAsync(t => t.CreatedById.ToString() == _userId 
+                                   && t.Status.Name.ToLower() == "resolved"
+                                   && t.UpdatedAt.HasValue 
+                                   && t.UpdatedAt.Value >= DateTime.Now.AddDays(-7))
+            };
+
+            _myRecentTickets = await DbContext.Tickets
+                .Include(t => t.Status)
+                .Include(t => t.Priority)
+                .Where(t => t.CreatedById.ToString() == _userId 
+                           || t.AssignedToId.ToString() == _userId)
+                .OrderByDescending(t => t.CreatedAt)
+                .Take(10)
+                .ToListAsync();
+        }
+    }
+
+    private Color GetStatusColor(string status) => status.ToLower() switch
+    {
+        "open" => Color.Warning,
+        "in progress" => Color.Info,
+        "resolved" => Color.Success,
+        "closed" => Color.Default,
+        _ => Color.Default
+    };
+
+    private Color GetPriorityColor(string priority) => priority.ToLower() switch
+    {
+        "high" => Color.Error,
+        "medium" => Color.Warning,
+        "low" => Color.Success,
+        _ => Color.Default
+    };
+
+    private class DashboardStats
+    {
+        public int TotalTickets { get; set; }
+        public int OpenTickets { get; set; }
+        public int HighPriorityTickets { get; set; }
+        public int ResolvedToday { get; set; }
+    }
+
+    private class UserDashboardStats
+    {
+        public int OpenTickets { get; set; }
+        public int AssignedTickets { get; set; }
+        public int RecentlyResolved { get; set; }
+    }
+}

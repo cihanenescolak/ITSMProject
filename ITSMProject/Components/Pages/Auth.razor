@@ -1,0 +1,23 @@
+﻿@page "/auth"
+
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize]
+
+<PageTitle>Auth</PageTitle>
+
+
+<MudText Typo="Typo.h3" GutterBottom="true">You are authenticated!</MudText>
+
+<AuthorizeView>
+    <MudText Class="mb-4">Hello @context.User.Identity?.Name!</MudText>
+    @* Roles *@
+    @if (context.User.IsInRole("admin"))
+    {
+        <MudText Class="mb-4">You are in the Admin role!</MudText>
+    }
+    else
+    {
+        <MudText Class="mb-4">You are not in the Admin role!</MudText>
+    }
+</AuthorizeView>

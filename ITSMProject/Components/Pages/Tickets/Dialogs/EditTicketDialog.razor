@@ -1,0 +1,247 @@
+@using ITSMProject.Data
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Identity
+@inject ApplicationDbContext DbContext
+@inject UserManager<ApplicationUser> UserManager
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form" Model="@_model">
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_model.Title" 
+                                Label="Title" Required="true"/>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_model.Description" 
+                                Label="Description" Lines="3"/>
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="TicketCategory" Label="Category" 
+                             Required="true"
+                             ValueChanged="@(async a => await OnCategoryChanged(a))">
+                        @foreach (var category in _categories)
+                        {
+                            <MudSelectItem Value="@category">@category.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="TicketSubCategory" Label="Subcategory" 
+                              @bind-Value="_model.Subcategory"
+                              Disabled="@(_subcategories.Count == 0)">
+                        @foreach (var subcategory in _subcategories)
+                        {
+                            <MudSelectItem Value="@subcategory">@subcategory.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="TicketStatus" Label="Status" 
+                              @bind-Value="_model.Status" Required="true">
+                        @foreach (var status in _statuses)
+                        {
+                            <MudSelectItem Value="@status">@status.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="TicketPriority" Label="Priority" 
+                              @bind-Value="_model.Priority" Required="true">
+                        @foreach (var priority in _priorities)
+                        {
+                            <MudSelectItem Value="@priority">@priority.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="Team" Label="Team" 
+                              ValueChanged="@(async a => await OnTeamChanged(a))">
+                        @foreach (var team in _teams)
+                        {
+                            <MudSelectItem Value="@team">@team.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="ApplicationUser" Label="Assign To" 
+                              @bind-Value="_model.AssignedTo"
+                              Disabled="@(_teamMembers.Count == 0)">
+                        @foreach (var member in _teamMembers)
+                        {
+                            <MudSelectItem Value="@member">@member.FirstName @member.LastName</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">Save Changes</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public Ticket Ticket { get; set; } = null!;
+
+    private MudForm _form = null!;
+    private readonly TicketModel _model = new();
+    private List<TicketCategory> _categories = new();
+    private List<TicketSubCategory> _subcategories = new();
+    private List<TicketStatus> _statuses = new();
+    private List<TicketPriority> _priorities = new();
+    private List<Team> _teams = new();
+    private List<ApplicationUser> _teamMembers = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadFormData();
+
+        // Initialize form with current ticket values
+        _model.Title = Ticket.Title;
+        _model.Description = Ticket.Description;
+        _model.Status = _statuses.First(s => s.Id == Ticket.StatusId);
+        _model.Priority = _priorities.First(p => p.Id == Ticket.PriorityId);
+        
+        // Load category and subcategory if exists
+        var ticketCategory = await DbContext.TicketCategories
+            .Include(c => c.SubCategories)
+            .FirstOrDefaultAsync(c => c.Id == Ticket.CategoryId);
+
+        if (ticketCategory != null)
+        {
+            if (ticketCategory is TicketSubCategory subCategory)
+            {
+                // If it's a subcategory, first set the parent category
+                _model.Category = await DbContext.TicketCategories
+                    .FirstOrDefaultAsync(c => c.Id == subCategory.ParentCategoryId);
+                    
+                await OnCategoryChanged(_model.Category);
+                _model.Subcategory = subCategory;
+            }
+            else
+            {
+                _model.Category = ticketCategory;
+                await OnCategoryChanged(_model.Category);
+            }
+        }
+        
+        // Load team and assigned user if exists
+        if (Ticket.AssignedTo?.TeamId != null)
+        {
+            var team = await DbContext.Teams
+                .Include(t => t.Members)
+                .FirstOrDefaultAsync(t => t.Id == Ticket.AssignedTo.TeamId);
+                
+            if (team != null)
+            {
+                _model.Team = team;
+                await OnTeamChanged(team);
+                _model.AssignedTo = Ticket.AssignedTo;
+            }
+        }
+    }
+
+    private async Task LoadFormData()
+    {
+        _categories = await DbContext.TicketCategories
+            .Where(c => c.GetType() == typeof(TicketCategory))
+            .ToListAsync();
+            
+        _statuses = await DbContext.TicketStatuses.ToListAsync();
+        _priorities = await DbContext.TicketPriorities.ToListAsync();
+        _teams = await DbContext.Teams.ToListAsync();
+    }
+
+    private async Task OnCategoryChanged(TicketCategory category)
+    {
+        if (category != null)
+        {
+            _model.Category = category;
+            _subcategories = await DbContext.Set<TicketSubCategory>()
+                .Where(s => s.ParentCategoryId == category.Id)
+                .ToListAsync();
+        }
+        else
+        {
+            _subcategories.Clear();
+        }
+        _model.Subcategory = null;
+        StateHasChanged();
+    }
+
+    private async Task OnTeamChanged(Team team)
+    {
+        if (team != null)
+        {
+            _model.Team = team;
+            _teamMembers = await DbContext.Users
+                .Where(u => u.TeamId == team.Id)
+                .ToListAsync();
+        }
+        else
+        {
+            _teamMembers.Clear();
+        }
+        _model.AssignedTo = null;
+        StateHasChanged();
+    }
+
+    private async Task Submit()
+    {
+        await _form.Validate();
+
+        if (_form.IsValid)
+        {
+            Ticket.Title = _model.Title;
+            Ticket.Description = _model.Description;
+            Ticket.StatusId = _model.Status.Id;
+            Ticket.PriorityId = _model.Priority.Id;
+            Ticket.AssignedToId = _model.AssignedTo?.Id;
+            Ticket.UpdatedAt = DateTime.UtcNow;
+
+            // If subcategory is selected, use its ID instead of the main category
+            if (_model.Subcategory != null)
+            {
+                Ticket.CategoryId = _model.Subcategory.Id;
+            }
+            else if (_model.Category != null)
+            {
+                Ticket.CategoryId = _model.Category.Id;
+            }
+
+            DbContext.Tickets.Update(Ticket);
+            await DbContext.SaveChangesAsync();
+
+            MudDialog.Close(DialogResult.Ok(Ticket));
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private class TicketModel
+    {
+        [Required(ErrorMessage = "Title is required")]
+        public string Title { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        [Required(ErrorMessage = "Category is required")]
+        public TicketCategory? Category { get; set; }
+        public TicketSubCategory? Subcategory { get; set; }
+        [Required(ErrorMessage = "Status is required")]
+        public TicketStatus? Status { get; set; }
+        [Required(ErrorMessage = "Priority is required")]
+        public TicketPriority? Priority { get; set; }
+        public Team? Team { get; set; }
+        public ApplicationUser? AssignedTo { get; set; }
+    }
+}

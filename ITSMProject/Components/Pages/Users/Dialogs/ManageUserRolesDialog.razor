@@ -1,0 +1,64 @@
+@using ITSMProject.Data
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<ApplicationUser> UserManager
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Manage Roles for @(User?.UserName)</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudAlert Severity="Severity.Info" Class="mb-4">Check the roles you want to assign to this user.</MudAlert>
+        <MudList Dense="true" T="string" Class="mt-4">
+            @foreach (var role in Roles)
+            {
+                <MudListItem>
+                    <MudCheckBox T="bool" @bind-Value="@_selectedRoles[role.Name]" Label="@role.Name"
+                                Color="Color.Primary"/>
+                </MudListItem>
+            }
+        </MudList>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">Save</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public ApplicationUser User { get; set; } = null!;
+    [Parameter] public List<ApplicationRole> Roles { get; set; } = null!;
+
+    private Dictionary<string, bool> _selectedRoles = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        foreach (var role in Roles)
+        {
+            _selectedRoles[role.Name] = await UserManager.IsInRoleAsync(User, role.Name);
+        }
+    }
+
+    private async Task Submit()
+    {
+        foreach (var roleEntry in _selectedRoles.Where(r => r.Key != null))
+        {
+            var isInRole = await UserManager.IsInRoleAsync(User, roleEntry.Key);
+
+            if (roleEntry.Value && !isInRole)
+            {
+                await UserManager.AddToRoleAsync(User, roleEntry.Key);
+            }
+            else if (!roleEntry.Value && isInRole)
+            {
+                await UserManager.RemoveFromRoleAsync(User, roleEntry.Key);
+            }
+        }
+
+        Snackbar.Add("User roles updated successfully", Severity.Success);
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

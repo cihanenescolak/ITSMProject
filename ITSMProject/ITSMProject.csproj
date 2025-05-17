@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <UserSecretsId>aspnet-ITSMProject-9b6cecff-40b9-4449-b2d3-a529a8c376fb</UserSecretsId>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    </PropertyGroup>
+
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="9.*"/>
+        <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.*"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.*"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.*"/>
+        <PackageReference Include="MudBlazor" Version="8.*"/>
+        <PackageReference Include="Extensions.MudBlazor.StaticInput" Version="3.*"/>
+        <PackageReference Include="QRCoder" Version="1.6.0" />
+    </ItemGroup>
+
+
+    <ItemGroup>
+      <Content Include="..\.dockerignore">
+        <Link>.dockerignore</Link>
+      </Content>
+      <None Remove="Data\app.db" />
+      <Content Include="Data\app.db" CopyToOutputDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+    </ItemGroup>
+
+</Project>

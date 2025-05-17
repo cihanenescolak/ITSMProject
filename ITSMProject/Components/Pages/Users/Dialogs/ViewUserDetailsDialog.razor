@@ -1,0 +1,76 @@
+@using ITSMProject.Data
+@inject IDialogService DialogService
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">User Details</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudCard Elevation="0">
+            <MudCardContent>
+                <MudGrid>
+                    <MudItem xs="12">
+                        <MudField Label="Username" Variant="Variant.Outlined">@User.UserName</MudField>
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudField Label="Email" Variant="Variant.Outlined">@User.Email</MudField>
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudField Label="Roles" Variant="Variant.Outlined">
+                            @if (UserRoles.Any())
+                            {
+                                <MudChipSet T="string">
+                                    @foreach (var role in UserRoles)
+                                    {
+                                        <MudChip T="string" Color="Color.Primary" Size="Size.Small">@role</MudChip>
+                                    }
+                                </MudChipSet>
+                            }
+                            else
+                            {
+                                <span>No roles assigned</span>
+                            }
+                        </MudField>
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudField Label="Email Confirmed" Variant="Variant.Outlined">
+                            <MudIcon Icon="@(User.EmailConfirmed ? Icons.Material.Filled.CheckCircle : Icons.Material.Filled.Cancel)"
+                                    Color="@(User.EmailConfirmed ? Color.Success : Color.Error)"/>
+                            @(User.EmailConfirmed ? "Yes" : "No")
+                        </MudField>
+                    </MudItem>
+                </MudGrid>
+            </MudCardContent>
+        </MudCard>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Close</MudButton>
+        <MudButton Color="Color.Info" OnClick="ManageRoles">Manage Roles</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public ApplicationUser User { get; set; } = null!;
+    [Parameter] public List<string> UserRoles { get; set; } = null!;
+    [Parameter] public List<ApplicationRole> AvailableRoles { get; set; } = null!;
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private async Task ManageRoles()
+    {
+        var parameters = new DialogParameters
+        {
+            { nameof(ManageUserRolesDialog.User), User },
+            { nameof(ManageUserRolesDialog.Roles), AvailableRoles }
+        };
+
+        var dialog = await DialogService.ShowAsync<ManageUserRolesDialog>("Manage Roles", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+    }
+}
