@@ -41,12 +41,12 @@ The following sample users are created automatically for testing:
 - Role: Administrator
 
 ### Technician Agent
-- Username: `test@admin.com`
+- Username: `tech@admin.com`
 - Password: `Test!123`
 - Role: Support Technician
 
 ### Regular User
-- Username: `user@user.com`
+- Username: `test@user.com`
 - Password: `Test!123`
 - Role: User
 
