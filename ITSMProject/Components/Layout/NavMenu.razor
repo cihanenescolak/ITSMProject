@@ -11,7 +11,7 @@
             <MudNavGroup Title="Tickets" Icon="@Icons.Material.Filled.ConfirmationNumber" Expanded="true">
                 @if(context.User.IsInRole("Admin") || context.User.IsInRole("Technician"))
                 {
-                    <MudNavLink Href="tickets" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.List">All Tickets
+                    <MudNavLink Href="tickets/all" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.List">All Tickets
                     </MudNavLink>
                     <MudNavLink Href="tickets/assigned" Match="NavLinkMatch.Prefix"
                                 Icon="@Icons.Material.Filled.Assignment">Assigned to Me
