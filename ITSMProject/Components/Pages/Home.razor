@@ -6,158 +6,178 @@
 @inject ApplicationDbContext DbContext
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
+@attribute [Authorize]
+
 <PageTitle>Dashboard</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge">
-    @if (_isAdmin)
-    {
-        <MudGrid>
-            <MudItem xs="12">
-                <MudText Typo="Typo.h4" Class="mb-4">Admin Dashboard</MudText>
-            </MudItem>
+<AuthorizeView>
+    <Authorized>
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge">
+            @if (_isAdmin)
+            {
+                <MudGrid>
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.h4" Class="mb-4">Admin Dashboard</MudText>
+                    </MudItem>
 
-            <MudItem xs="12" sm="6" md="3">
-                <MudPaper Elevation="2" Class="pa-4" Style="height: 100%">
-                    <MudStack>
-                        <MudText Typo="Typo.h6">Total Tickets</MudText>
-                        <MudText Typo="Typo.h4">@_stats.TotalTickets</MudText>
-                    </MudStack>
-                </MudPaper>
-            </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudPaper Elevation="2" Class="pa-4" Style="height: 100%">
+                            <MudStack>
+                                <MudText Typo="Typo.h6">Total Tickets</MudText>
+                                <MudText Typo="Typo.h4">@_stats.TotalTickets</MudText>
+                            </MudStack>
+                        </MudPaper>
+                    </MudItem>
 
-            <MudItem xs="12" sm="6" md="3">
-                <MudPaper Elevation="2" Class="pa-4" Style="height: 100%">
-                    <MudStack>
-                        <MudText Typo="Typo.h6">Open Tickets</MudText>
-                        <MudText Typo="Typo.h4" Color="Color.Warning">@_stats.OpenTickets</MudText>
-                    </MudStack>
-                </MudPaper>
-            </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudPaper Elevation="2" Class="pa-4" Style="height: 100%">
+                            <MudStack>
+                                <MudText Typo="Typo.h6">Open Tickets</MudText>
+                                <MudText Typo="Typo.h4" Color="Color.Warning">@_stats.OpenTickets</MudText>
+                            </MudStack>
+                        </MudPaper>
+                    </MudItem>
 
-            <MudItem xs="12" sm="6" md="3">
-                <MudPaper Elevation="2" Class="pa-4" Style="height: 100%">
-                    <MudStack>
-                        <MudText Typo="Typo.h6">High Priority</MudText>
-                        <MudText Typo="Typo.h4" Color="Color.Error">@_stats.HighPriorityTickets</MudText>
-                    </MudStack>
-                </MudPaper>
-            </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudPaper Elevation="2" Class="pa-4" Style="height: 100%">
+                            <MudStack>
+                                <MudText Typo="Typo.h6">High Priority</MudText>
+                                <MudText Typo="Typo.h4" Color="Color.Error">@_stats.HighPriorityTickets</MudText>
+                            </MudStack>
+                        </MudPaper>
+                    </MudItem>
 
-            <MudItem xs="12" sm="6" md="3">
-                <MudPaper Elevation="2" Class="pa-4" Style="height: 100%">
-                    <MudStack>
-                        <MudText Typo="Typo.h6">Resolved Today</MudText>
-                        <MudText Typo="Typo.h4" Color="Color.Success">@_stats.ResolvedToday</MudText>
-                    </MudStack>
-                </MudPaper>
-            </MudItem>
+                    <MudItem xs="12" sm="6" md="3">
+                        <MudPaper Elevation="2" Class="pa-4" Style="height: 100%">
+                            <MudStack>
+                                <MudText Typo="Typo.h6">Resolved Today</MudText>
+                                <MudText Typo="Typo.h4" Color="Color.Success">@_stats.ResolvedToday</MudText>
+                            </MudStack>
+                        </MudPaper>
+                    </MudItem>
 
-            <MudItem xs="12" sm="12" md="8">
-                <MudPaper Elevation="2" Class="pa-4">
-                    <MudText Typo="Typo.h6" Class="mb-4">Recent Tickets</MudText>
-                    <MudTable Items="@_recentTickets" Dense="true" Hover="true" Striped="true">
-                        <HeaderContent>
-                            <MudTh>ID</MudTh>
-                            <MudTh>Title</MudTh>
-                            <MudTh>Status</MudTh>
-                            <MudTh>Priority</MudTh>
-                            <MudTh>Created</MudTh>
-                        </HeaderContent>
-                        <RowTemplate>
-                            <MudTd>#@context.Id</MudTd>
-                            <MudTd>@context.Title</MudTd>
-                            <MudTd>
-                                <MudChip Size="Size.Small" Color="@GetStatusColor(context.Status.Name)" T="string">
-                                    @context.Status.Name
-                                </MudChip>
-                            </MudTd>
-                            <MudTd>
-                                <MudChip Size="Size.Small" Color="@GetPriorityColor(context.Priority.Name)" T="string">
-                                    @context.Priority.Name
-                                </MudChip>
-                            </MudTd>
-                            <MudTd>@context.CreatedAt.ToShortDateString()</MudTd>
-                        </RowTemplate>
-                    </MudTable>
-                </MudPaper>
-            </MudItem>
+                    <MudItem xs="12" sm="12" md="8">
+                        <MudPaper Elevation="2" Class="pa-4">
+                            <MudText Typo="Typo.h6" Class="mb-4">Recent Tickets</MudText>
+                            <MudTable Items="@_recentTickets" Dense="true" Hover="true" Striped="true">
+                                <HeaderContent>
+                                    <MudTh>ID</MudTh>
+                                    <MudTh>Title</MudTh>
+                                    <MudTh>Status</MudTh>
+                                    <MudTh>Priority</MudTh>
+                                    <MudTh>Created</MudTh>
+                                </HeaderContent>
+                                <RowTemplate Context="ticket">
+                                    <MudTd>#@ticket.Id</MudTd>
+                                    <MudTd>@ticket.Title</MudTd>
+                                    <MudTd>
+                                        <MudChip Size="Size.Small" Color="@GetStatusColor(ticket.Status.Name)"
+                                                 T="string">
+                                            @ticket.Status.Name
+                                        </MudChip>
+                                    </MudTd>
+                                    <MudTd>
+                                        <MudChip Size="Size.Small" Color="@GetPriorityColor(ticket.Priority.Name)"
+                                                 T="string">
+                                            @ticket.Priority.Name
+                                        </MudChip>
+                                    </MudTd>
+                                    <MudTd>@ticket.CreatedAt.ToShortDateString()</MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        </MudPaper>
+                    </MudItem>
 
-            <MudItem xs="12" sm="12" md="4">
-                <MudPaper Elevation="2" Class="pa-4">
-                    <MudText Typo="Typo.h6" Class="mb-4">Tickets by Category</MudText>
-                    <MudChart ChartType="ChartType.Pie" Width="100%" Height="300px"
-                             InputData="@_categoryData"
-                             InputLabels="@_categoryLabels"/>
-                </MudPaper>
-            </MudItem>
-        </MudGrid>
-    }
-    else
-    {
-        <MudGrid>
-            <MudItem xs="12">
-                <MudText Typo="Typo.h4" Class="mb-4">My Dashboard</MudText>
-            </MudItem>
+                    <MudItem xs="12" sm="12" md="4">
+                        <MudPaper Elevation="2" Class="pa-4">
+                            <MudText Typo="Typo.h6" Class="mb-4">Tickets by Category</MudText>
+                            <MudChart ChartType="ChartType.Pie" Width="100%" Height="300px"
+                                      InputData="@_categoryData"
+                                      InputLabels="@_categoryLabels"/>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+            }
+            else
+            {
+                <MudGrid>
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.h4" Class="mb-4">My Dashboard</MudText>
+                    </MudItem>
 
-            <MudItem xs="12" sm="6" md="4">
-                <MudPaper Elevation="2" Class="pa-4">
-                    <MudStack>
-                        <MudText Typo="Typo.h6">My Open Tickets</MudText>
-                        <MudText Typo="Typo.h4">@_myStats.OpenTickets</MudText>
-                    </MudStack>
-                </MudPaper>
-            </MudItem>
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudPaper Elevation="2" Class="pa-4">
+                            <MudStack>
+                                <MudText Typo="Typo.h6">My Open Tickets</MudText>
+                                <MudText Typo="Typo.h4">@_myStats.OpenTickets</MudText>
+                            </MudStack>
+                        </MudPaper>
+                    </MudItem>
 
-            <MudItem xs="12" sm="6" md="4">
-                <MudPaper Elevation="2" Class="pa-4">
-                    <MudStack>
-                        <MudText Typo="Typo.h6">Assigned to Me</MudText>
-                        <MudText Typo="Typo.h4">@_myStats.AssignedTickets</MudText>
-                    </MudStack>
-                </MudPaper>
-            </MudItem>
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudPaper Elevation="2" Class="pa-4">
+                            <MudStack>
+                                <MudText Typo="Typo.h6">Assigned to Me</MudText>
+                                <MudText Typo="Typo.h4">@_myStats.AssignedTickets</MudText>
+                            </MudStack>
+                        </MudPaper>
+                    </MudItem>
 
-            <MudItem xs="12" sm="6" md="4">
-                <MudPaper Elevation="2" Class="pa-4">
-                    <MudStack>
-                        <MudText Typo="Typo.h6">Recently Resolved</MudText>
-                        <MudText Typo="Typo.h4" Color="Color.Success">@_myStats.RecentlyResolved</MudText>
-                    </MudStack>
-                </MudPaper>
-            </MudItem>
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudPaper Elevation="2" Class="pa-4">
+                            <MudStack>
+                                <MudText Typo="Typo.h6">Recently Resolved</MudText>
+                                <MudText Typo="Typo.h4" Color="Color.Success">@_myStats.RecentlyResolved</MudText>
+                            </MudStack>
+                        </MudPaper>
+                    </MudItem>
 
-            <MudItem xs="12">
-                <MudPaper Elevation="2" Class="pa-4">
-                    <MudText Typo="Typo.h6" Class="mb-4">My Recent Tickets</MudText>
-                    <MudTable Items="@_myRecentTickets" Dense="true" Hover="true" Striped="true">
-                        <HeaderContent>
-                            <MudTh>ID</MudTh>
-                            <MudTh>Title</MudTh>
-                            <MudTh>Status</MudTh>
-                            <MudTh>Priority</MudTh>
-                            <MudTh>Created</MudTh>
-                        </HeaderContent>
-                        <RowTemplate>
-                            <MudTd>#@context.Id</MudTd>
-                            <MudTd>@context.Title</MudTd>
-                            <MudTd>
-                                <MudChip Size="Size.Small" Color="@GetStatusColor(context.Status.Name)" T="string">
-                                    @context.Status.Name
-                                </MudChip>
-                            </MudTd>
-                            <MudTd>
-                                <MudChip Size="Size.Small" Color="@GetPriorityColor(context.Priority.Name)" T="string">
-                                    @context.Priority.Name
-                                </MudChip>
-                            </MudTd>
-                            <MudTd>@context.CreatedAt.ToShortDateString()</MudTd>
-                        </RowTemplate>
-                    </MudTable>
-                </MudPaper>
-            </MudItem>
-        </MudGrid>
-    }
-</MudContainer>
+                    <MudItem xs="12">
+                        <MudPaper Elevation="2" Class="pa-4">
+                            <MudText Typo="Typo.h6" Class="mb-4">My Recent Tickets</MudText>
+                            <MudTable Items="@_myRecentTickets" Dense="true" Hover="true" Striped="true">
+                                <HeaderContent>
+                                    <MudTh>ID</MudTh>
+                                    <MudTh>Title</MudTh>
+                                    <MudTh>Status</MudTh>
+                                    <MudTh>Priority</MudTh>
+                                    <MudTh>Created</MudTh>
+                                </HeaderContent>
+                                <RowTemplate Context="ticket">
+                                    <MudTd>#@ticket.Id</MudTd>
+                                    <MudTd>@ticket.Title</MudTd>
+                                    <MudTd>
+                                        <MudChip Size="Size.Small" Color="@GetStatusColor(ticket.Status.Name)"
+                                                 T="string">
+                                            @ticket.Status.Name
+                                        </MudChip>
+                                    </MudTd>
+                                    <MudTd>
+                                        <MudChip Size="Size.Small" Color="@GetPriorityColor(ticket.Priority.Name)"
+                                                 T="string">
+                                            @ticket.Priority.Name
+                                        </MudChip>
+                                    </MudTd>
+                                    <MudTd>@ticket.CreatedAt.ToShortDateString()</MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+            }
+        </MudContainer>
+    </Authorized>
+    <NotAuthorized>
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-4">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.h5">You are not authorized to view this page.</MudText>
+                <MudButton Color="Color.Primary" Href="/login">Login</MudButton>
+            </MudPaper>
+        </MudContainer>
+    </NotAuthorized>
+</AuthorizeView>
+
+
 
 @code {
     private bool _isAdmin;
@@ -196,14 +216,14 @@
             {
                 TotalTickets = await DbContext.Tickets.CountAsync(),
                 OpenTickets = await DbContext.Tickets
-                    .CountAsync(t => (t.CreatedById.ToString() == _userId || _isAdmin )
-                        && t.Status.Name.ToLower() != "resolved"),
+                    .CountAsync(t => (t.CreatedById.ToString() == _userId || _isAdmin)
+                                     && t.Status.Name.ToLower() != "resolved"),
                 HighPriorityTickets = await DbContext.Tickets
                     .CountAsync(t => t.Priority.Name.ToLower() == "high"),
                 ResolvedToday = await DbContext.Tickets
-                    .CountAsync(t => t.Status.Name.ToLower() == "resolved" 
-                                   && t.UpdatedAt.HasValue 
-                                   && t.UpdatedAt.Value.Date == DateTime.Today)
+                    .CountAsync(t => t.Status.Name.ToLower() == "resolved"
+                                     && t.UpdatedAt.HasValue
+                                     && t.UpdatedAt.Value.Date == DateTime.Today)
             };
 
             _recentTickets = await DbContext.Tickets
@@ -233,23 +253,23 @@
             _myStats = new UserDashboardStats
             {
                 OpenTickets = await DbContext.Tickets
-                    .CountAsync(t => (t.CreatedById.ToString() == _userId  || _isAdmin)
-                                   && t.Status.Name.ToLower() != "resolved"),
+                    .CountAsync(t => (t.CreatedById.ToString() == _userId || _isAdmin)
+                                     && t.Status.Name.ToLower() != "resolved"),
                 AssignedTickets = await DbContext.Tickets
-                    .CountAsync(t => t.AssignedToId.ToString() == _userId 
-                                   && t.Status.Name.ToLower() != "resolved"),
+                    .CountAsync(t => t.AssignedToId.ToString() == _userId
+                                     && t.Status.Name.ToLower() != "resolved"),
                 RecentlyResolved = await DbContext.Tickets
-                    .CountAsync(t => t.CreatedById.ToString() == _userId 
-                                   && t.Status.Name.ToLower() == "resolved"
-                                   && t.UpdatedAt.HasValue 
-                                   && t.UpdatedAt.Value >= DateTime.Now.AddDays(-7))
+                    .CountAsync(t => t.CreatedById.ToString() == _userId
+                                     && t.Status.Name.ToLower() == "resolved"
+                                     && t.UpdatedAt.HasValue
+                                     && t.UpdatedAt.Value >= DateTime.Now.AddDays(-7))
             };
 
             _myRecentTickets = await DbContext.Tickets
                 .Include(t => t.Status)
                 .Include(t => t.Priority)
-                .Where(t => t.CreatedById.ToString() == _userId 
-                           || t.AssignedToId.ToString() == _userId)
+                .Where(t => t.CreatedById.ToString() == _userId
+                            || t.AssignedToId.ToString() == _userId)
                 .OrderByDescending(t => t.CreatedAt)
                 .Take(10)
                 .ToListAsync();
@@ -287,4 +307,5 @@
         public int AssignedTickets { get; set; }
         public int RecentlyResolved { get; set; }
     }
+
 }

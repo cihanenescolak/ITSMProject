@@ -2,7 +2,7 @@
 services:
   itsmprojecttsmproject:
     build:
-      context: "C:\\Users\\cihan\\RiderProjects\\ITSMProject"
+      context: "C:\\Users\\cihan\\Documents\\GitHub\\ITSMProject"
       dockerfile: "ITSMProject/Dockerfile"
       target: "base"
     command: []
@@ -16,7 +16,7 @@ services:
     image: "itsmprojecttsmproject:dev"
     ports: []
     volumes:
-    - "C:\\Users\\cihan\\RiderProjects\\ITSMProject\\ITSMProject:/app:rw"
-    - "C:\\Users\\cihan\\RiderProjects\\ITSMProject:/src:rw"
+    - "C:\\Users\\cihan\\Documents\\GitHub\\ITSMProject\\ITSMProject:/app:rw"
+    - "C:\\Users\\cihan\\Documents\\GitHub\\ITSMProject:/src:rw"
     - "C:\\Users\\cihan\\.nuget\\packages:/home/app/.nuget/packages"
     working_dir: "/app"
