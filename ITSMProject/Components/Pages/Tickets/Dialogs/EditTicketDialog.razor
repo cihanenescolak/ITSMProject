@@ -6,24 +6,37 @@
 @inject ISnackbar Snackbar
 
 <MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Edit" Class="mr-2"/> Edit Ticket #@Ticket.Id
+        </MudText>
+    </TitleContent>
     <DialogContent>
-        <MudForm @ref="_form" Model="@_model">
-            <MudGrid>
+        <MudForm @ref="_form" Model="@_model" Class="mt-4">
+            <MudGrid Spacing="3">
                 <MudItem xs="12">
-                    <MudTextField @bind-Value="_model.Title" 
-                                Label="Title" Required="true"/>
+                    <MudTextField @bind-Value="_model.Title"
+                                  Label="Title"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  For="@(() => _model.Title)"/>
                 </MudItem>
 
                 <MudItem xs="12">
-                    <MudTextField @bind-Value="_model.Description" 
-                                Label="Description" Lines="3"/>
+                    <MudTextField @bind-Value="_model.Description"
+                                  Label="Description"
+                                  Variant="Variant.Outlined"
+                                  Lines="4"
+                                  For="@(() => _model.Description)"/>
                 </MudItem>
 
                 <MudItem xs="12" sm="6">
                     <MudSelect T="TicketCategory" Label="Category"
-                               Value= "@_model.Category"
+                               Variant="Variant.Outlined"
+                               Value="@_model.Category"
                                Required="true"
-                             ValueChanged="@(async a => await OnCategoryChanged(a))">
+                               For="@(() => _model.Category)"
+                               ValueChanged="@OnCategoryChanged">
                         @foreach (var category in _categories)
                         {
                             <MudSelectItem Value="@category">@category.Name</MudSelectItem>
@@ -32,9 +45,11 @@
                 </MudItem>
 
                 <MudItem xs="12" sm="6">
-                    <MudSelect T="TicketSubCategory" Label="Subcategory" 
-                              @bind-Value="_model.Subcategory"
-                              Disabled="@(_subcategories.Count == 0)">
+                    <MudSelect T="TicketSubCategory" Label="Subcategory"
+                               Variant="Variant.Outlined"
+                               @bind-Value="_model.Subcategory"
+                               For="@(() => _model.Subcategory)"
+                               Disabled="@(_subcategories.Count == 0)">
                         @foreach (var subcategory in _subcategories)
                         {
                             <MudSelectItem Value="@subcategory">@subcategory.Name</MudSelectItem>
@@ -43,8 +58,11 @@
                 </MudItem>
 
                 <MudItem xs="12" sm="6">
-                    <MudSelect T="TicketStatus" Label="Status" 
-                              @bind-Value="_model.Status" Required="true">
+                    <MudSelect T="TicketStatus" Label="Status"
+                               Variant="Variant.Outlined"
+                               @bind-Value="_model.Status"
+                               Required="true"
+                               For="@(() => _model.Status)">
                         @foreach (var status in _statuses)
                         {
                             <MudSelectItem Value="@status">@status.Name</MudSelectItem>
@@ -53,8 +71,11 @@
                 </MudItem>
 
                 <MudItem xs="12" sm="6">
-                    <MudSelect T="TicketPriority" Label="Priority" 
-                              @bind-Value="_model.Priority" Required="true">
+                    <MudSelect T="TicketPriority" Label="Priority"
+                               Variant="Variant.Outlined"
+                               @bind-Value="_model.Priority"
+                               Required="true"
+                               For="@(() => _model.Priority)">
                         @foreach (var priority in _priorities)
                         {
                             <MudSelectItem Value="@priority">@priority.Name</MudSelectItem>
@@ -63,8 +84,11 @@
                 </MudItem>
 
                 <MudItem xs="12" sm="6">
-                    <MudSelect T="Team" Label="Team" 
-                              @bind-Value="_model.Team">
+                    <MudSelect T="Team" Label="Team"
+                               Variant="Variant.Outlined"
+                               Value="_model.Team"
+                               For="@(() => _model.Team)"
+                               ValueChanged="@OnTeamChanged">
                         @foreach (var team in _teams)
                         {
                             <MudSelectItem Value="@team">@team.Name</MudSelectItem>
@@ -73,9 +97,11 @@
                 </MudItem>
 
                 <MudItem xs="12" sm="6">
-                    <MudSelect T="ApplicationUser" Label="Assign To" 
-                              @bind-Value="_model.AssignedTo"
-                              Disabled="@(_teamMembers.Count == 0)">
+                    <MudSelect T="ApplicationUser" Label="Assign To"
+                               Variant="Variant.Outlined"
+                               @bind-Value="_model.AssignedTo"
+                               For="@(() => _model.AssignedTo)"
+                               Disabled="@(_teamMembers.Count == 0)">
                         @foreach (var member in _teamMembers)
                         {
                             <MudSelectItem Value="@member">@member.FirstName @member.LastName</MudSelectItem>
@@ -86,8 +112,8 @@
         </MudForm>
     </DialogContent>
     <DialogActions>
-        <MudButton OnClick="Cancel">Cancel</MudButton>
-        <MudButton Color="Color.Primary" OnClick="Submit">Save Changes</MudButton>
+        <MudButton OnClick="Cancel" Variant="Variant.Text" Class="mr-2">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Submit">Save Changes</MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -111,9 +137,9 @@
         // Initialize form with current ticket values
         _model.Title = Ticket.Title;
         _model.Description = Ticket.Description;
-        _model.Status = _statuses.First(s => s.Id == Ticket.StatusId);
-        _model.Priority = _priorities.First(p => p.Id == Ticket.PriorityId);
-        
+        _model.Status = _statuses.FirstOrDefault(s => s.Id == Ticket.StatusId);
+        _model.Priority = _priorities.FirstOrDefault(p => p.Id == Ticket.PriorityId);
+
         // Load category and subcategory if exists
         var ticketCategory = await DbContext.TicketCategories
             .Include(c => c.SubCategories)
@@ -126,9 +152,12 @@
                 // If it's a subcategory, first set the parent category
                 _model.Category = await DbContext.TicketCategories
                     .FirstOrDefaultAsync(c => c.Id == subCategory.ParentCategoryId);
-                    
-                await OnCategoryChanged(_model.Category);
-                _model.Subcategory = subCategory;
+
+                if (_model.Category != null) // Ensure parent category was found
+                {
+                    await OnCategoryChanged(_model.Category);
+                    _model.Subcategory = _subcategories.FirstOrDefault(s => s.Id == subCategory.Id);
+                }
             }
             else
             {
@@ -136,19 +165,19 @@
                 await OnCategoryChanged(_model.Category);
             }
         }
-        
+
         // Load team and assigned user if exists
         if (Ticket.AssignedTo?.TeamId != null)
         {
             var team = await DbContext.Teams
                 .Include(t => t.Members)
                 .FirstOrDefaultAsync(t => t.Id == Ticket.AssignedTo.TeamId);
-                
+
             if (team != null)
             {
                 _model.Team = team;
                 await OnTeamChanged(team);
-                _model.AssignedTo = Ticket.AssignedTo;
+                _model.AssignedTo = _teamMembers.FirstOrDefault(u => u.Id == Ticket.AssignedToId);
             }
         }
     }
@@ -156,21 +185,23 @@
     private async Task LoadFormData()
     {
         _categories = await DbContext.TicketCategories
-            .Where(c => c.GetType() == typeof(TicketCategory))
+            .Where(c => c.GetType() == typeof(TicketCategory)) // Only parent categories
+            .OrderBy(c => c.Name)
             .ToListAsync();
-            
-        _statuses = await DbContext.TicketStatuses.ToListAsync();
-        _priorities = await DbContext.TicketPriorities.ToListAsync();
-        _teams = await DbContext.Teams.ToListAsync();
+
+        _statuses = await DbContext.TicketStatuses.OrderBy(s => s.Name).ToListAsync();
+        _priorities = await DbContext.TicketPriorities.OrderBy(p => p.Name).ToListAsync();
+        _teams = await DbContext.Teams.OrderBy(t => t.Name).ToListAsync();
     }
 
-    private async Task OnCategoryChanged(TicketCategory category)
+    private async Task OnCategoryChanged(TicketCategory? category)
     {
         if (category != null)
         {
             _model.Category = category;
             _subcategories = await DbContext.Set<TicketSubCategory>()
                 .Where(s => s.ParentCategoryId == category.Id)
+                .OrderBy(s => s.Name)
                 .ToListAsync();
         }
         else
@@ -181,13 +212,14 @@
         StateHasChanged();
     }
 
-    private async Task OnTeamChanged(Team team)
+    private async Task OnTeamChanged(Team? team)
     {
         if (team != null)
         {
             _model.Team = team;
             _teamMembers = await DbContext.Users
                 .Where(u => u.TeamId == team.Id)
+                .OrderBy(u => u.FirstName).ThenBy(u => u.LastName)
                 .ToListAsync();
         }
         else
@@ -206,8 +238,8 @@
         {
             Ticket.Title = _model.Title;
             Ticket.Description = _model.Description;
-            Ticket.StatusId = _model.Status.Id;
-            Ticket.PriorityId = _model.Priority.Id;
+            Ticket.StatusId = _model.Status!.Id;
+            Ticket.PriorityId = _model.Priority!.Id;
             Ticket.AssignedToId = _model.AssignedTo?.Id;
             Ticket.UpdatedAt = DateTime.UtcNow;
 
@@ -223,7 +255,7 @@
 
             DbContext.Tickets.Update(Ticket);
             await DbContext.SaveChangesAsync();
-
+            Snackbar.Add($"Ticket #{Ticket.Id} updated successfully.", Severity.Success);
             MudDialog.Close(DialogResult.Ok(Ticket));
         }
     }
@@ -233,16 +265,23 @@
     private class TicketModel
     {
         [Required(ErrorMessage = "Title is required")]
+        [StringLength(100, ErrorMessage = "Title cannot be longer than 100 characters.")]
         public string Title { get; set; } = string.Empty;
+
+        [StringLength(2000, ErrorMessage = "Description cannot be longer than 2000 characters.")]
         public string? Description { get; set; }
+
         [Required(ErrorMessage = "Category is required")]
         public TicketCategory? Category { get; set; }
         public TicketSubCategory? Subcategory { get; set; }
+
         [Required(ErrorMessage = "Status is required")]
         public TicketStatus? Status { get; set; }
+
         [Required(ErrorMessage = "Priority is required")]
         public TicketPriority? Priority { get; set; }
         public Team? Team { get; set; }
         public ApplicationUser? AssignedTo { get; set; }
     }
 }
+

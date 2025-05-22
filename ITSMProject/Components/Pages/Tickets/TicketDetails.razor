@@ -2,6 +2,7 @@
 @using ITSMProject.Components.Pages.Tickets.Dialogs
 @using ITSMProject.Data
 @using Microsoft.AspNetCore.Identity
+@using MudBlazor.Utilities
 @inject ApplicationDbContext DbContext
 @inject ISnackbar Snackbar
 @inject NavigationManager NavigationManager
@@ -9,95 +10,144 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<ApplicationUser> UserManager
 
-<PageTitle>Ticket Details</PageTitle>
+<PageTitle>Ticket Details - #@_ticket?.Id</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-6">
     @if (_ticket != null)
     {
-        <MudPaper Class="pa-4">
-            <MudToolBar>
-                <MudText Typo="Typo.h5">Ticket #@_ticket.Id</MudText>
-                <MudSpacer/>
-                @if (_canEdit)
-                {
-                    <MudButton Color="Color.Primary" 
-                              OnClick="OpenEditDialog">Edit</MudButton>
-                }
-            </MudToolBar>
-
-            <MudGrid>
+        <MudPaper Elevation="3" Class="pa-4 rounded-lg">
+            <MudGrid Spacing="3">
                 <MudItem xs="12">
-                    <MudText Typo="Typo.h6">@_ticket.Title</MudText>
-                </MudItem>
-
-                <MudItem xs="12" sm="6">
-                    <MudList Dense="true" T="string">
-                        <MudListItem T="string">
-                            <MudText>
-                                <strong>Status:</strong>
-                                <MudChip Color="@GetStatusColor(_ticket.Status.Name)" T="string">
-                                    @_ticket.Status.Name
-                                </MudChip>
-                            </MudText>
-                        </MudListItem>
-                        <MudListItem T="string">
-                            <MudText>
-                                <strong>Priority:</strong>
-                                <MudChip Color="@GetPriorityColor(_ticket.Priority.Name)" T="string">
-                                    @_ticket.Priority.Name
-                                </MudChip>
-                            </MudText>
-                        </MudListItem>
-                        <MudListItem T="string">
-                            <MudText><strong>Category:</strong> @_ticket.Category.Name</MudText>
-                        </MudListItem>
-                    </MudList>
-                </MudItem>
-
-                <MudItem xs="12" sm="6">
-                    <MudList Dense="true" T="string">
-                        <MudListItem T="string">
-                            <MudText><strong>Created By:</strong> @_ticket.CreatedBy.UserName</MudText>
-                        </MudListItem>
-                        <MudListItem T="string">
-                            <MudText><strong>Created:</strong> @_ticket.CreatedAt.ToLocalTime().ToString("g")</MudText>
-                        </MudListItem>
-                        <MudListItem T="string">
-                            <MudText><strong>Assigned To:</strong> @(_ticket.AssignedTo?.UserName ?? "Unassigned")</MudText>
-                        </MudListItem>
-                    </MudList>
-                </MudItem>
-
-                <MudItem xs="12">
-                    <MudText><strong>Description</strong></MudText>
-                    <MudText>@_ticket.Description</MudText>
-                </MudItem>
-
-                <MudItem xs="12">
-                    <MudDivider Class="my-4"/>
-                    <MudText Typo="Typo.h6" Class="mb-4">Comments</MudText>
-
-                    <MudTextField @bind-Value="_newComment" Label="Add comment" Lines="3"/>
-                    <MudButton Color="Color.Primary" OnClick="AddComment" 
-                              Class="mt-2" Disabled="string.IsNullOrWhiteSpace(_newComment)">
-                        Add Comment
-                    </MudButton>
-
-                    <MudList Clickable="false" Class="mt-4" T="string">
-                        @foreach (var comment in _ticket.Comments.OrderByDescending(c => c.CreatedAt))
+                    <MudToolBar DisableGutters="true" Class="rounded-t-lg">
+                        <MudText Typo="Typo.h5" Color="Color.Primary"><strong>Ticket #@_ticket.Id</strong></MudText>
+                        <MudSpacer />
+                        @if (_canEdit)
                         {
-                            <MudListItem T="string">
-                                <MudText Typo="Typo.body2">
-                                    <strong>@comment.CreatedBy.UserName</strong>
-                                    - @comment.CreatedAt.ToLocalTime().ToString("g")
-                                </MudText>
-                                <MudText>@comment.Comment</MudText>
-                            </MudListItem>
+                            <MudButton Variant="Variant.Filled"
+                                      Color="Color.Primary"
+                                      StartIcon="@Icons.Material.Filled.Edit"
+                                      OnClick="OpenEditDialog"
+                                      Class="mr-2">Edit Ticket</MudButton>
                         }
-                    </MudList>
+                    </MudToolBar>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudText Typo="Typo.h4" GutterBottom="true">@_ticket.Title</MudText>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudPaper Outlined="true" Class="pa-3 rounded">
+                        <MudText Typo="Typo.h6" GutterBottom="true">Details</MudText>
+                        <MudList Dense="true" T="string">
+                            <MudListItem T="string" Icon="@Icons.Material.Filled.Label" IconColor="Color.Secondary">
+                                <MudText>
+                                    <strong>Status:</strong>
+                                    <MudChip Label="true" Color="@GetStatusColor(_ticket.Status.Name)" Size="Size.Small" Class="ml-2">
+                                        @_ticket.Status.Name
+                                    </MudChip>
+                                </MudText>
+                            </MudListItem>
+                            <MudListItem T="string" Icon="@Icons.Material.Filled.PriorityHigh" IconColor="Color.Secondary">
+                                <MudText>
+                                    <strong>Priority:</strong>
+                                    <MudChip Label="true" Color="@GetPriorityColor(_ticket.Priority.Name)" Size="Size.Small" Class="ml-2">
+                                        @_ticket.Priority.Name
+                                    </MudChip>
+                                </MudText>
+                            </MudListItem>
+                            <MudListItem T="string" Icon="@Icons.Material.Filled.Category" IconColor="Color.Secondary">
+                                <MudText><strong>Category:</strong> @_ticket.Category.Name</MudText>
+                            </MudListItem>
+                        </MudList>
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudPaper Outlined="true" Class="pa-3 rounded">
+                        <MudText Typo="Typo.h6" GutterBottom="true">People & Dates</MudText>
+                        <MudList Dense="true" T="string">
+                            <MudListItem T="string" Icon="@Icons.Material.Filled.Person" IconColor="Color.Tertiary">
+                                <MudText><strong>Created By:</strong> @_ticket.CreatedBy.UserName</MudText>
+                            </MudListItem>
+                            <MudListItem T="string" Icon="@Icons.Material.Filled.CalendarToday" IconColor="Color.Tertiary">
+                                <MudText><strong>Created:</strong> @_ticket.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy HH:mm")</MudText>
+                            </MudListItem>
+                            <MudListItem T="string" Icon="@Icons.Material.Filled.AssignmentInd" IconColor="Color.Tertiary">
+                                <MudText><strong>Assigned To:</strong> @(_ticket.AssignedTo?.UserName ?? "Unassigned")</MudText>
+                            </MudListItem>
+                        </MudList>
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudPaper Outlined="true" Class="pa-3 rounded">
+                        <MudText Typo="Typo.h6" GutterBottom="true">Description</MudText>
+                        <MudText Class="mt-2">@((MarkupString)_ticket.Description.Replace(Environment.NewLine, "<br/>"))</MudText>
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudDivider Class="my-6" />
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudText Typo="Typo.h5" GutterBottom="true" Class="mb-4">Comments</MudText>
+                    <MudPaper Elevation="0" Class="pa-4 rounded-lg" Style="background-color: var(--mud-palette-background-grey);">
+                        <MudTextField @bind-Value="_newComment"
+                                     Label="Add your comment"
+                                     Variant="Variant.Outlined"
+                                     Lines="4"
+                                     Adornment="Adornment.End"
+                                     AdornmentIcon="@Icons.Material.Filled.Send"
+                                     OnAdornmentClick="AddComment"
+                                     AdornmentAriaLabel="Add comment"/>
+                        <MudButton Variant="Variant.Filled"
+                                  Color="Color.Primary"
+                                  OnClick="AddComment"
+                                  Disabled="string.IsNullOrWhiteSpace(_newComment) || _currentUser == null"
+                                  Class="mt-3 float-right">
+                            Post Comment
+                        </MudButton>
+                        <div style="clear:both;"></div>
+                    </MudPaper>
+
+                    @if (_ticket.Comments.Any())
+                    {
+                        <MudList Class="mt-4" T="string">
+                            @foreach (var comment in _ticket.Comments.OrderByDescending(c => c.CreatedAt))
+                            {
+                                <MudPaper Class="pa-3 mb-3 rounded" Elevation="2">
+                                    <MudGrid>
+                                        <MudItem xs="12" Class="d-flex align-center">
+                                            <MudAvatar Color="Color.Secondary" Size="Size.Medium" Class="mr-3">@comment.CreatedBy.UserName?.FirstOrDefault()</MudAvatar>
+                                        </MudItem>
+                                        <MudItem xs="12">
+                                            <MudText Typo="Typo.body1"><strong>@comment.CreatedBy.UserName</strong></MudText>
+                                            <MudText Typo="Typo.caption" Color="Color.Dark" Class="mud-text-secondary">@comment.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy HH:mm")</MudText>
+                                            <MudText Typo="Typo.body2" Class="mt-2">@((MarkupString)comment.Comment.Replace(Environment.NewLine, "<br/>"))</MudText>
+                                        </MudItem>
+                                    </MudGrid>
+                                </MudPaper>
+                            }
+                        </MudList>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.subtitle1" Class="mt-4 text-center mud-text-secondary">No comments yet. Be the first to comment!</MudText>
+                    }
                 </MudItem>
             </MudGrid>
         </MudPaper>
+    }
+    else
+    {
+        <MudGrid Justify="Justify.Center" Class="mt-8">
+            <MudItem>
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+                <MudText Typo="Typo.h6" Class="mt-4 text-center">Loading ticket details...</MudText>
+            </MudItem>
+        </MudGrid>
     }
 </MudContainer>
 
@@ -107,13 +157,13 @@
     private Ticket? _ticket;
     private bool _canEdit;
     private string _newComment = string.Empty;
-    private ApplicationUser _currentUser = null!;
+    private ApplicationUser? _currentUser; // Allow null initially
 
     protected override async Task OnInitializedAsync()
     {
+        await SetCurrentUser(); // Set current user first to avoid null reference issues
         await LoadTicket();
-        await SetCurrentUser();
-        await CheckEditPermission();
+        // CheckEditPermission will be called within LoadTicket if _ticket is not null
     }
 
     private async Task LoadTicket()
@@ -131,7 +181,13 @@
         if (_ticket == null)
         {
             NavigationManager.NavigateTo("/tickets");
+            Snackbar.Add("Ticket not found.", Severity.Error);
         }
+        else
+        {
+            await CheckEditPermission(); // Now safe to call as _currentUser is set
+        }
+        StateHasChanged(); // Ensure UI updates after loading
     }
 
     private async Task SetCurrentUser()
@@ -146,69 +202,80 @@
 
     private async Task CheckEditPermission()
     {
-        if (_ticket == null || _currentUser == null) return;
+        if (_ticket == null || _currentUser == null)
+        {
+            _canEdit = false;
+            return;
+        }
 
         var isAdmin = await UserManager.IsInRoleAsync(_currentUser, "Admin");
         var isTechnician = await UserManager.IsInRoleAsync(_currentUser, "Technician");
 
-        _canEdit = isAdmin || 
-                   _ticket.CreatedById == _currentUser.Id || 
+        _canEdit = isAdmin ||
+                   _ticket.CreatedById == _currentUser.Id ||
                    (isTechnician && _ticket.AssignedToId == _currentUser.Id);
     }
 
     private async Task AddComment()
     {
-        if (_ticket == null || string.IsNullOrWhiteSpace(_newComment)) return;
+        if (_ticket == null || string.IsNullOrWhiteSpace(_newComment) || _currentUser == null)
+        {
+            Snackbar.Add("Cannot add empty comment or user not found.", Severity.Warning);
+            return;
+        }
 
         var comment = new TicketComment
         {
             Comment = _newComment,
             TicketId = _ticket.Id,
-            CreatedById = _currentUser.Id
+            CreatedById = _currentUser.Id,
+            CreatedAt = DateTime.UtcNow // Ensure CreatedAt is set
         };
 
         DbContext.TicketComments.Add(comment);
         await DbContext.SaveChangesAsync();
-        
+
         _newComment = string.Empty;
+        // Reload the ticket to get the new comment with its CreatedBy navigation property populated
         await LoadTicket();
-        
+
         Snackbar.Add("Comment added successfully", Severity.Success);
+        StateHasChanged(); // Ensure UI updates
     }
 
     private async Task OpenEditDialog()
     {
         if (_ticket == null) return;
 
-        var parameters = new DialogParameters
+        var parameters = new DialogParameters<EditTicketDialog>
         {
-            ["Ticket"] = _ticket
+            { x => x.Ticket, _ticket }
         };
 
         var dialog = await DialogService.ShowAsync<EditTicketDialog>("Edit Ticket", parameters);
         var result = await dialog.Result;
 
-        if (!result.Canceled)
+        if (result != null && !result.Canceled)
         {
             await LoadTicket();
             Snackbar.Add("Ticket updated successfully", Severity.Success);
         }
     }
 
-    private Color GetStatusColor(string status) => status.ToLower() switch
+    private Color GetStatusColor(string status) => status.ToLowerInvariant() switch
     {
         "open" => Color.Warning,
         "in progress" => Color.Info,
         "resolved" => Color.Success,
         "closed" => Color.Default,
-        _ => Color.Default
+        _ => Color.Surface
     };
 
-    private Color GetPriorityColor(string priority) => priority.ToLower() switch
+    private Color GetPriorityColor(string priority) => priority.ToLowerInvariant() switch
     {
         "high" => Color.Error,
         "medium" => Color.Warning,
-        "low" => Color.Success,
-        _ => Color.Default
+        "low" => Color.Info,
+        _ => Color.Surface
     };
 }
